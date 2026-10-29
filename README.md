@@ -120,6 +120,26 @@ The bot will:
 [2023-07-16T10:30:06.000Z] Target date reached! Successfully booked appointment on 2023-07-15
 ```
 
+## Live table in the terminal
+
+Run the bot with its output going to `bot.log`, and watch it in a second terminal as a table — one row per round, one column per city:
+
+```bash
+node src/index.js -c 2027-03-01 -m 2026-11-20 >> bot.log 2>&1   # terminal 1: the bot
+npm run watch                                                     # terminal 2: Ctrl-C quits the table, not the bot
+```
+
+```
+  TIME   │     CALGARY      │      OTTAWA      │     TORONTO      │ TOTAL │   NEXT
+ 14:31:07│ 2027-05-20 ×105  │      — none      │ 2027-06-25 ×33↑  │  138  │ 14:35:12
+ 14:35:24│ 2027-05-18 ×98↑  │      — none      │ 2027-06-25 ×31   │  129  │ 14:39:40
+```
+
+- Columns come from `FACILITY_ID`; ↑/↓ mark a city's earliest date moving earlier or later
+- Sign-ins, backoffs and errors appear as coloured banners between rows
+- A booking shows a big box and rings the terminal bell
+- It replays recent history first, then follows new lines live. To watch another file: `npm run watch -- path/to/file.log`
+
 ## Safety Features
 
 - ✅ **Read-only until booking** - Only books when better dates are found
