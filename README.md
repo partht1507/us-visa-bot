@@ -149,6 +149,19 @@ npm run watch                                                     # terminal 2: 
 - ✅ **Backs off when blocked** - A dropped connection (the site's block signal) pauses 1 h, then 2 h, then 4 h; a session error re-logs in after 5 min, 15 min, then 1 h — instead of retrying immediately
 - ✅ **Stops before making it worse** - After 4 failures in a row it exits and asks you to check the site by hand
 - ✅ **Secure credentials** - Uses environment variables for sensitive data
+- ✅ **Signs out when stopped** - Ctrl-C or `kill` signs out of the site, then confirms it (the account page must now redirect to sign-in) and logs the result. A booking in progress finishes first.
+
+## Request log
+
+Every request is logged with its result and how long the site took, plus the random pauses between them — handy for spotting a slowdown or block early:
+
+```
+[2026-10-29T19:02:57.988Z] request: GET sign-in page → 200 in 308ms
+[2026-10-29T19:02:58.187Z] request: POST sign-in → 200 in 168ms
+[2026-10-29T19:02:58.555Z] request: GET dates Calgary(89) → 200 in 412ms
+[2026-10-29T19:02:58.556Z] pause 7.4s before Ottawa(92)
+[2026-10-29T19:03:06.012Z] request: GET dates Ottawa(92) → failed after 30012ms (ECONNRESET)
+```
 
 ## Contributing
 

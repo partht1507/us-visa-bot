@@ -28,7 +28,17 @@ export class Bot {
   async initialize() {
     log('Initializing visa bot...');
     await this.budget.take(2); // sign-in page + form submit
-    return await this.client.login();
+    this.session = await this.client.login();
+    return this.session;
+  }
+
+  // Returns { confirmed, detail }
+  async logout() {
+    if (!this.session) return { confirmed: false, detail: 'no open session' };
+    this.budget.record(2); // sign-out + confirmation check
+    const result = await this.client.logout(this.session);
+    this.session = null;
+    return result;
   }
 
   // Checks every city. A city with a date in the window is booked right away
@@ -44,7 +54,11 @@ export class Bot {
     log(`check order: ${this._cityNames(facilities)}`);
     for (const [i, facilityId] of facilities.entries()) {
       // Space out requests within a cycle instead of firing them back to back
-      if (i > 0) await sleep(FACILITY_GAP_MIN + Math.random() * (FACILITY_GAP_MAX - FACILITY_GAP_MIN));
+      if (i > 0) {
+        const gap = FACILITY_GAP_MIN + Math.random() * (FACILITY_GAP_MAX - FACILITY_GAP_MIN);
+        log(`pause ${gap.toFixed(1)}s before ${facilityName(this.config.countryCode, facilityId)}(${facilityId})`);
+        await sleep(gap);
+      }
 
       await this.budget.take();
       let dates;
@@ -113,6 +127,15 @@ export class Bot {
   }
 
   async bookAppointment(sessionHeaders, candidate) {
+    this.booking = true; // a stop request waits for this to finish
+    try {
+      return await this._book(sessionHeaders, candidate);
+    } finally {
+      this.booking = false;
+    }
+  }
+
+  async _book(sessionHeaders, candidate) {
     const { date, facilityId } = candidate;
     this.budget.record(); // never wait on the cap with a slot in hand
     const time = await this.client.checkAvailableTime(

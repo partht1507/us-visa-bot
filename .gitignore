@@ -1,3 +1,4 @@
 node_modules/*
 .env
 .request-budget.json
+.stop-request
