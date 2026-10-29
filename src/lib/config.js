@@ -2,19 +2,42 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Re-reads .env so settings changed while the bot runs (cities, delay, cap, alerts)
+// take effect at the next check. Returns null instead of exiting if the file is invalid.
+export function reloadConfig() {
+  try {
+    const parsed = dotenv.config({ override: true }).parsed;
+    if (!parsed) return null;
+    const config = buildConfig();
+    return missingKeys(config).length ? null : config;
+  } catch {
+    return null;
+  }
+}
+
 export function getConfig() {
-  const config = {
+  const config = buildConfig();
+  validateConfig(config);
+  return config;
+}
+
+function buildConfig() {
+  return {
     email: process.env.EMAIL,
     password: process.env.PASSWORD,
     scheduleId: process.env.SCHEDULE_ID,
     facilityId: parseFacilityIds(process.env.FACILITY_ID),
     countryCode: process.env.COUNTRY_CODE,
     refreshDelay: parseRefreshDelay(process.env.REFRESH_DELAY || '180-300'),
+    ntfyTopic: process.env.NTFY_TOPIC || null,
     dailyRequestCap: Number(process.env.DAILY_REQUEST_CAP) || 500
   };
+}
 
-  validateConfig(config);
-  return config;
+function missingKeys(config) {
+  const missing = ['email', 'password', 'scheduleId', 'countryCode'].filter(key => !config[key]);
+  if (!config.facilityId || config.facilityId.length === 0) missing.push('facilityId');
+  return missing;
 }
 
 function parseFacilityIds(raw) {
@@ -36,9 +59,7 @@ function parseRefreshDelay(raw) {
 }
 
 function validateConfig(config) {
-  const required = ['email', 'password', 'scheduleId', 'countryCode'];
-  const missing = required.filter(key => !config[key]);
-  if (config.facilityId.length === 0) missing.push('facilityId');
+  const missing = missingKeys(config);
 
   if (missing.length > 0) {
     console.error(`Missing required environment variables: ${missing.map(envName).join(', ')}`);

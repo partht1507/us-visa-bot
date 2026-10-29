@@ -1,5 +1,6 @@
 import { VisaHttpClient } from './client.js';
 import { log, sleep, isSocketHangupError } from './utils.js';
+import { notify } from './notify.js';
 import { facilityName } from './facilities.js';
 import { RequestBudget } from './budget.js';
 
@@ -23,6 +24,8 @@ export class Bot {
     this.dryRun = options.dryRun || false;
     this.client = new VisaHttpClient(this.config.countryCode, this.config.email, this.config.password);
     this.budget = new RequestBudget(this.config.dailyRequestCap);
+    this.emptyCities = new Set(); // cities that dropped to [] after having dates
+    this.hadDates = new Set();    // cities that returned dates at least once this run
   }
 
   async initialize() {
@@ -110,6 +113,7 @@ export class Bot {
       .map(([f, d]) => `${facilityName(cc, f)}(${f})=${d}`)
       .join('  ');
     log(`earliest per city: ${summary}  [budget ${this.budget.used()}/${this.budget.cap}]`);
+    await this._alertEmptyChanges(earliestByFacility);
 
     if (!matched) log(`no good dates — ${totalPolled} polled, ${totalTooLate} too late, ${totalTooEarly} too early`);
     return booked;
@@ -124,6 +128,31 @@ export class Bot {
 
   _cityNames(ids) {
     return ids.map(f => `${facilityName(this.config.countryCode, f)}(${f})`).join(', ');
+  }
+
+  // Soft-ban pattern: a city that was returning dates suddenly returns [].
+  // Cities empty from the start (no history of dates) are not alerted.
+  async _alertEmptyChanges(earliestByFacility) {
+    const cc = this.config.countryCode;
+    const dropped = [], recovered = [];
+    for (const [f, d] of Object.entries(earliestByFacility)) {
+      const empty = d === '—×0';
+      if (!empty) {
+        if (this.emptyCities.has(f)) { this.emptyCities.delete(f); recovered.push(facilityName(cc, f)); }
+        this.hadDates.add(f);
+      } else if (this.hadDates.has(f) && !this.emptyCities.has(f)) {
+        this.emptyCities.add(f);
+        dropped.push(facilityName(cc, f));
+      }
+    }
+    if (dropped.length) {
+      log(`SOFT BAN pattern: ${dropped.join(', ')} had dates, now returning 0`);
+      await notify(this.config.ntfyTopic, 'US Visa Bot: soft ban starting', `${dropped.join(', ')} had dates and now return 0 — likely soft ban.`, { priority: 'high', tags: ['warning'] });
+    }
+    if (recovered.length) {
+      log(`city has dates again: ${recovered.join(', ')}`);
+      await notify(this.config.ntfyTopic, 'US Visa Bot: city back', `${recovered.join(', ')} returning dates again.`, { priority: 'low', tags: ['white_check_mark'] });
+    }
   }
 
   async bookAppointment(sessionHeaders, candidate) {
@@ -167,6 +196,7 @@ export class Bot {
     const city = facilityName(this.config.countryCode, facilityId);
     if (!res.ok) {
       log(`booking FAILED for ${date} ${time} ${city}(${facilityId}): the site answered ${res.status}`);
+      await notify(this.config.ntfyTopic, 'US Visa Bot: booking failed', `Tried ${date} ${time} in ${city}; the site answered ${res.status}. Your appointment wasn't changed — still watching.`, { priority: 'high', tags: ['warning'] });
       return false;
     }
 
@@ -182,10 +212,17 @@ export class Bot {
     if (!shown?.some(a => a.date === date)) {
       const seen = shown?.length ? shown.map(a => `${a.date} ${a.time}`).join(', ') : 'nothing it could read';
       log(`booking NOT confirmed for ${date} ${time} ${city}(${facilityId}): the account page shows ${seen} — check usvisa-info.com`);
+      await notify(this.config.ntfyTopic, 'US Visa Bot: CHECK your appointment', `Tried to book ${date} ${time} in ${city}, but your account page shows ${seen}. Check usvisa-info.com.`, { priority: 'max', tags: ['warning', 'calendar'] });
       return false;
     }
     log(`booking confirmed: the account page shows ${date} ${time}`);
     log(`booked time at ${date} ${time} ${city}(${facilityId})`);
+    await notify(
+      this.config.ntfyTopic,
+      'US Visa Bot BOOKED',
+      `${date} ${time}\n${city} (facility ${facilityId})\nConfirmed on your account page`,
+      { priority: 'max', tags: ['tada', 'calendar'] }
+    );
     return true;
   }
 

@@ -1,5 +1,6 @@
 import { Bot } from '../lib/bot.js';
-import { getConfig } from '../lib/config.js';
+import { getConfig, reloadConfig } from '../lib/config.js';
+import { notify } from '../lib/notify.js';
 import { log, sleep, isSocketHangupError, onStopRequest } from '../lib/utils.js';
 
 const MIN_CYCLE_DELAY = 60;                // floor between check cycles (s), whatever REFRESH_DELAY says
@@ -58,8 +59,8 @@ export async function botCommand(options) {
     log(`Minimum date: ${minDate}`);
   }
 
-  const { min, max } = delayRange(config);
   if (config.refreshDelay.min < MIN_CYCLE_DELAY) {
+    const { min, max } = delayRange(config);
     log(`REFRESH_DELAY below safe floor — using ${min}-${max}s between cycles`);
   }
 
@@ -68,6 +69,7 @@ export async function botCommand(options) {
     activeBot = bot;
 
     while (true) {
+      applyLiveSettings(bot);
       // A date in the window is booked the moment its city answers
       await bot.checkAvailableDate(sessionHeaders, currentBookedDate, minDate, async candidate => {
         if (!(await bot.bookAppointment(sessionHeaders, candidate))) return false;
@@ -81,6 +83,7 @@ export async function botCommand(options) {
       });
       consecutiveFailures = 0;
 
+      const { min, max } = delayRange(bot.config);
       const delay = min + Math.random() * (max - min);
       log(`sleeping ${delay.toFixed(1)}s`);
       await sleep(delay);
@@ -90,6 +93,7 @@ export async function botCommand(options) {
     consecutiveFailures++;
     if (consecutiveFailures > MAX_CONSECUTIVE_FAILURES) {
       log(`${consecutiveFailures - 1} failures in a row — stopping to protect the account. Check the site manually before restarting.`);
+      await notify(config.ntfyTopic, 'US Visa Bot STOPPED', `Repeated failures: ${err.message}`, { priority: 'high', tags: ['warning'] });
       process.exit(1);
     }
 
@@ -111,4 +115,21 @@ export async function botCommand(options) {
 function delayRange(cfg) {
   const min = Math.max(cfg.refreshDelay.min, MIN_CYCLE_DELAY);
   return { min, max: Math.max(cfg.refreshDelay.max, min) };
+}
+
+// Pick up .env edits between checks. Login details are left alone: changing
+// them needs a restart since the session is already open.
+function applyLiveSettings(bot) {
+  const next = reloadConfig();
+  if (!next) return;
+  const prev = bot.config;
+  const changes = [];
+  if (next.facilityId.join(',') !== prev.facilityId.join(',')) changes.push(`cities ${prev.facilityId.join(',')} → ${next.facilityId.join(',')}`);
+  if (next.refreshDelay.min !== prev.refreshDelay.min || next.refreshDelay.max !== prev.refreshDelay.max) changes.push(`delay ${prev.refreshDelay.min}-${prev.refreshDelay.max}s → ${next.refreshDelay.min}-${next.refreshDelay.max}s`);
+  if (next.dailyRequestCap !== prev.dailyRequestCap) changes.push(`daily cap ${prev.dailyRequestCap} → ${next.dailyRequestCap}`);
+  if (next.ntfyTopic !== prev.ntfyTopic) changes.push('alert topic changed');
+  if (!changes.length) return;
+  bot.config = { ...prev, facilityId: next.facilityId, refreshDelay: next.refreshDelay, dailyRequestCap: next.dailyRequestCap, ntfyTopic: next.ntfyTopic };
+  bot.budget.cap = next.dailyRequestCap;
+  log(`settings updated: ${changes.join('; ')}`);
 }

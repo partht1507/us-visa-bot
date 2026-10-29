@@ -11,6 +11,8 @@ An automated bot that monitors and reschedules US visa interview appointments to
 - 🚨 Exits successfully when target date is reached
 - 📊 Detailed logging with timestamps
 - 🔐 Secure authentication with environment variables
+- 📱 Optional phone alerts (ntfy.sh) when it books, when a soft ban starts, or when it stops
+- ⚙️ Settings in `.env` apply live — no restart needed
 
 ## How It Works
 
@@ -47,7 +49,10 @@ SCHEDULE_ID=your_schedule_id
 FACILITY_ID=your_facility_id
 REFRESH_DELAY=180-300
 DAILY_REQUEST_CAP=500
+NTFY_TOPIC=pick-a-hard-to-guess-name
 ```
+
+Settings other than the login details are re-read before every round, so you can change cities, `REFRESH_DELAY`, `DAILY_REQUEST_CAP` or `NTFY_TOPIC` in `.env` while the bot runs; it logs `settings updated: …` when it picks them up.
 
 ### Finding Your Configuration Values
 
@@ -60,6 +65,7 @@ DAILY_REQUEST_CAP=500
 | `FACILITY_ID` | One or more consulate facility IDs, comma-separated | Found in network calls when selecting dates, or inspect the date selector dropdown <br>Example: Paris = `44`; Canada: `89,92,94` (Calgary, Ottawa, Toronto) |
 | `REFRESH_DELAY` | Seconds between checks: a number or a random range | Optional, defaults to `180-300`. Values under 60 are raised to 60. |
 | `DAILY_REQUEST_CAP` | Most requests the bot may send in any 24 hours | Optional, defaults to `500`. When reached, the bot waits for slots to free up. |
+| `NTFY_TOPIC` | Phone push alerts via [ntfy.sh](https://ntfy.sh) | Optional. Install the ntfy app and subscribe to a topic name only you know. Alerts: booked (confirmed on your account page), booking failed or not confirmed, soft-ban pattern (a city that had dates now returns none), city back, stopped after failures. |
 
 ## Usage
 
