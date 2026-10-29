@@ -41,10 +41,13 @@ function validateConfig(config) {
   if (config.facilityId.length === 0) missing.push('facilityId');
 
   if (missing.length > 0) {
-    console.error(`Missing required environment variables: ${missing.map(k => k.toUpperCase()).join(', ')}`);
+    console.error(`Missing required environment variables: ${missing.map(envName).join(', ')}`);
     process.exit(1);
   }
 }
+
+// scheduleId -> SCHEDULE_ID
+const envName = key => key.replace(/[A-Z]/g, c => '_' + c).toUpperCase();
 
 export function getBaseUri(countryCode) {
   return `https://ais.usvisa-info.com/en-${countryCode}/niv`;

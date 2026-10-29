@@ -102,9 +102,9 @@ function processLine(line) {
   if ((m = msg.match(/^MATCH: (\S+) at (.+)$/))) { flush(); return console.log(banner(C.bgGood, `★ Found ${m[1]} at ${m[2]} — booking now`)); }
 
   const show = (bg, text) => { flush(); console.log(banner(bg, text)); };
-  if (/^(Blocked\/hangup|hangup on|Session\/authentication error)|failures in a row|sign-out NOT confirmed|sign-out failed/.test(msg)) return show(C.bgBad, '⚠ ' + msg);
+  if (/^(Blocked\/hangup|hangup on|Session\/authentication error|booking NOT confirmed|booking FAILED|couldn't read the account page)|failures in a row|sign-out NOT confirmed|sign-out failed/.test(msg)) return show(C.bgBad, '⚠ ' + msg);
   if (/^(SOFT BAN pattern|EARLIER THAN APPOINTMENT|daily budget used|REFRESH_DELAY below)/.test(msg)) return show(C.bgWarn, '! ' + msg);
-  if (/^(Logging in|Initializing with|Minimum date|Target date|settings updated|city has dates again|stop requested|sign-out confirmed|bot stopped)/.test(msg)) return show(C.bgInfo, `· ${clock(iso)}  ${msg}`);
+  if (/^(booking confirmed|Logging in|Initializing with|Minimum date|Target date|settings updated|city has dates again|stop requested|sign-out confirmed|bot stopped)/.test(msg)) return show(C.bgInfo, `· ${clock(iso)}  ${msg}`);
 }
 
 if (!existsSync(LOG)) console.log(`${C.D}Waiting for ${LOG} — start the bot first.${C.R}`);

@@ -102,7 +102,7 @@ export class Bot {
     }
 
     this.budget.record(2);
-    await this.client.book(
+    const res = await this.client.book(
       sessionHeaders,
       this.config.scheduleId,
       facilityId,
@@ -111,6 +111,26 @@ export class Bot {
     );
 
     const city = facilityName(this.config.countryCode, facilityId);
+    if (!res.ok) {
+      log(`booking FAILED for ${date} ${time} ${city}(${facilityId}): the site answered ${res.status}`);
+      return false;
+    }
+
+    // The site can answer 200 without moving the appointment (e.g. the slot was
+    // just taken), so it only counts once the account page shows the new date
+    this.budget.record(2);
+    let shown = null;
+    try {
+      shown = await this.client.consularAppointments(sessionHeaders);
+    } catch (err) {
+      log(`couldn't read the account page to confirm the booking: ${err.message}`);
+    }
+    if (!shown?.some(a => a.date === date)) {
+      const seen = shown?.length ? shown.map(a => `${a.date} ${a.time}`).join(', ') : 'nothing it could read';
+      log(`booking NOT confirmed for ${date} ${time} ${city}(${facilityId}): the account page shows ${seen} — check usvisa-info.com`);
+      return false;
+    }
+    log(`booking confirmed: the account page shows ${date} ${time}`);
     log(`booked time at ${date} ${time} ${city}(${facilityId})`);
     return true;
   }

@@ -18,7 +18,7 @@ The bot logs into your account on https://ais.usvisa-info.com/ and checks for av
 
 ## Prerequisites
 
-- Node.js 16+ 
+- Node.js 20+ (required by `commander` 14)
 - A valid US visa interview appointment
 - Access to https://ais.usvisa-info.com/
 
@@ -105,7 +105,7 @@ The bot will:
    - Must be earlier than current date (`-c`)
    - Must be after minimum date (`-m`) if specified
    - Will exit successfully if target date (`-t`) is reached
-4. **Book** the appointment automatically if conditions are met
+4. **Book** the appointment automatically if conditions are met, then **confirm** it: it only counts as booked once your account page shows the new date (otherwise it logs `booking NOT confirmed` and keeps your old date)
 5. **Continue** monitoring until target is reached or manually stopped
 
 ## Output Examples
