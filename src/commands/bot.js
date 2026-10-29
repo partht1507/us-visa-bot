@@ -1,5 +1,6 @@
 import { Bot } from '../lib/bot.js';
 import { getConfig, reloadConfig } from '../lib/config.js';
+import { rotateIfNeeded } from '../lib/logfiles.js';
 import { notify } from '../lib/notify.js';
 import { log, sleep, isSocketHangupError, onStopRequest } from '../lib/utils.js';
 
@@ -12,7 +13,7 @@ let consecutiveFailures = 0;
 let activeBot = null; // the bot holding a signed-in session, if any
 let stopping = false;
 
-// Stop (Ctrl-C or a kill signal) signs out of the site before exiting.
+// Stop (dashboard, stop script, Ctrl-C) signs out of the site before exiting.
 // A booking that's already under way is allowed to finish first.
 async function shutdown() {
   if (stopping) return;
@@ -39,6 +40,7 @@ process.on('SIGINT', shutdown);
 onStopRequest(shutdown);
 
 export async function botCommand(options) {
+  options = withSavedWindow(options);
   const config = getConfig();
   const bot = new Bot(config, { dryRun: options.dryRun });
   let currentBookedDate = options.current;
@@ -70,6 +72,7 @@ export async function botCommand(options) {
 
     while (true) {
       applyLiveSettings(bot);
+      try { rotateIfNeeded(); } catch (e) { log(`log rotation failed: ${e.message}`); }
       // A date in the window is booked the moment its city answers
       await bot.checkAvailableDate(sessionHeaders, currentBookedDate, minDate, async candidate => {
         if (!(await bot.bookAppointment(sessionHeaders, candidate))) return false;
@@ -117,7 +120,7 @@ function delayRange(cfg) {
   return { min, max: Math.max(cfg.refreshDelay.max, min) };
 }
 
-// Pick up .env edits between checks. Login details are left alone: changing
+// Pick up .env edits (e.g. from the dashboard) between checks. Login details are left alone: changing
 // them needs a restart since the session is already open.
 function applyLiveSettings(bot) {
   const next = reloadConfig();
@@ -132,4 +135,21 @@ function applyLiveSettings(bot) {
   bot.config = { ...prev, facilityId: next.facilityId, refreshDelay: next.refreshDelay, dailyRequestCap: next.dailyRequestCap, ntfyTopic: next.ntfyTopic };
   bot.budget.cap = next.dailyRequestCap;
   log(`settings updated: ${changes.join('; ')}`);
+}
+
+// Options not given on the command line come from the window saved in .env
+// (BOOK_FROM / BOOK_TO / BOOK_MODE), which the dashboard writes on every Start
+function withSavedWindow(options) {
+  const env = process.env;
+  const current = options.current || (env.BOOK_TO && new Date(Date.parse(env.BOOK_TO) + 86400000).toISOString().slice(0, 10));
+  if (!current) {
+    console.error('No booking window: pass -c <date>, or set BOOK_TO (and optionally BOOK_FROM) in .env');
+    process.exit(1);
+  }
+  return {
+    ...options,
+    current,
+    min: options.min || env.BOOK_FROM || undefined,
+    dryRun: options.dryRun ?? (env.BOOK_MODE === 'watch'),
+  };
 }

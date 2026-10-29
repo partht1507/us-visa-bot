@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 import { log } from './utils.js';
 import { getBaseUri } from './config.js';
 import { facilityName } from './facilities.js';
+import { recordRequest } from './requestlog.js';
 
 // Common headers
 const COMMON_HEADERS = {
@@ -139,7 +140,7 @@ export class VisaHttpClient {
   // describe(body) adds what came back to the request's log line, e.g. "0 dates"
   async _jsonRequest(url, headers = {}, label = 'GET json', describe = null) {
     const started = Date.now();
-    let res, body;
+    let res, body, text = '';
     try {
       res = await fetch(url, {
         headers: {
@@ -149,13 +150,23 @@ export class VisaHttpClient {
         },
         cache: "no-store"
       });
-      body = await res.json();
+      text = await res.text();
+      body = JSON.parse(text);
     } catch (err) {
-      log(`request: ${label} → ${res ? `${res.status} ` : ''}failed after ${Date.now() - started}ms (${err.code || err.message})`);
+      const ms = Date.now() - started, error = err.code || err.message;
+      log(`request: ${label} → ${res ? `${res.status} ` : ''}failed after ${ms}ms (${error})`);
+      recordRequest({ label, url: this._path(url), status: res?.status ?? null, ms, bytes: text.length, error, preview: text.slice(0, 300) || undefined });
       throw err;
     }
+    const ms = Date.now() - started;
     const what = body?.error ? `error: ${body.error}` : describe?.(body);
-    log(`request: ${label} → ${res.status} in ${Date.now() - started}ms${what ? ` · ${what}` : ''}`);
+    log(`request: ${label} → ${res.status} in ${ms}ms${what ? ` · ${what}` : ''}`);
+    recordRequest({
+      label, url: this._path(url), status: res.status, ms, bytes: text.length, got: what || null,
+      ...(Array.isArray(body) && { dates: body.map(item => item.date).sort() }),
+      ...(body && !Array.isArray(body) && (body.available_times || body.business_times) && { times: [...(body.business_times || []), ...(body.available_times || [])] }),
+      ...(body?.error && { error: body.error }),
+    });
     return this._handleErrors(body);
   }
 
@@ -187,12 +198,23 @@ export class VisaHttpClient {
     const started = Date.now();
     try {
       const res = await request;
-      log(`request: ${label} → ${res.status} in ${Date.now() - started}ms`);
+      const ms = Date.now() - started;
+      log(`request: ${label} → ${res.status} in ${ms}ms`);
+      const location = res.headers.get('location');
+      recordRequest({ label, url: this._path(res.url), status: res.status, ms, bytes: Number(res.headers.get('content-length')) || null,
+        ...(location && { redirect: this._path(location) }), ...(res.redirected && { redirect: this._path(res.url) }) });
       return res;
     } catch (err) {
-      log(`request: ${label} → failed after ${Date.now() - started}ms (${err.code || err.message})`);
+      const ms = Date.now() - started, error = err.code || err.message;
+      log(`request: ${label} → failed after ${ms}ms (${error})`);
+      recordRequest({ label, status: null, ms, error });
       throw err;
     }
+  }
+
+  // The address without the host, for the request details
+  _path(url) {
+    try { const u = new URL(url, this.baseUri); return u.pathname + u.search; } catch { return String(url); }
   }
 
   _city(facilityId) {

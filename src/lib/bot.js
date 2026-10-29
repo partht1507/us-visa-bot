@@ -3,6 +3,9 @@ import { log, sleep, isSocketHangupError } from './utils.js';
 import { notify } from './notify.js';
 import { facilityName } from './facilities.js';
 import { RequestBudget } from './budget.js';
+import { currentAppointment } from './appointment.js';
+
+const EARLY_REALERT_MS = 6 * 60 * 60 * 1000; // don't repeat the same date for a city within 6h
 
 const FACILITY_GAP_MIN = 5;  // seconds between facility requests in one cycle
 const FACILITY_GAP_MAX = 12;
@@ -26,6 +29,7 @@ export class Bot {
     this.budget = new RequestBudget(this.config.dailyRequestCap);
     this.emptyCities = new Set(); // cities that dropped to [] after having dates
     this.hadDates = new Set();    // cities that returned dates at least once this run
+    this.earlyAlerted = {};       // facilityId -> { date, at } of the last earlier-than-appointment alert
   }
 
   async initialize() {
@@ -114,6 +118,7 @@ export class Bot {
       .join('  ');
     log(`earliest per city: ${summary}  [budget ${this.budget.used()}/${this.budget.cap}]`);
     await this._alertEmptyChanges(earliestByFacility);
+    await this._alertBeatsAppointment(earliestByFacility, windowEnd, minDate);
 
     if (!matched) log(`no good dates — ${totalPolled} polled, ${totalTooLate} too late, ${totalTooEarly} too early`);
     return booked;
@@ -152,6 +157,30 @@ export class Bot {
     if (recovered.length) {
       log(`city has dates again: ${recovered.join(', ')}`);
       await notify(this.config.ntfyTopic, 'US Visa Bot: city back', `${recovered.join(', ')} returning dates again.`, { priority: 'low', tags: ['white_check_mark'] });
+    }
+  }
+
+  // A date earlier than the appointment you hold, but outside the booking window:
+  // the bot won't book it, so tell the user in case they want to widen the window.
+  async _alertBeatsAppointment(earliestByFacility, windowEnd, windowStart) {
+    const appt = currentAppointment();
+    if (!appt) return;
+    const cc = this.config.countryCode;
+    const now = Date.now();
+    for (const [f, v] of Object.entries(earliestByFacility)) {
+      const date = v.match(/^(\d{4}-\d{2}-\d{2})/)?.[1];
+      if (!date || date >= appt.date) continue;
+      const inWindow = date < windowEnd && (!windowStart || date >= windowStart);
+      if (inWindow) continue;
+      const last = this.earlyAlerted[f];
+      if (last && last.date === date && now - last.at < EARLY_REALERT_MS) continue;
+      this.earlyAlerted[f] = { date, at: now };
+      const days = Math.round((Date.parse(appt.date) - Date.parse(date)) / 86400000);
+      const city = facilityName(cc, f);
+      log(`EARLIER THAN APPOINTMENT: ${city}(${f}) ${date} — ${days}d before your ${appt.date}, outside your window`);
+      await notify(this.config.ntfyTopic, `Earlier date: ${city} ${date}`,
+        `${days} days earlier than your appointment (${appt.date}), but outside your booking window — widen the window if you want it.`,
+        { priority: 'high', tags: ['calendar', 'eyes'] });
     }
   }
 
