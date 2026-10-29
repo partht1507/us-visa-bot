@@ -6,6 +6,17 @@ import { RequestBudget } from './budget.js';
 const FACILITY_GAP_MIN = 5;  // seconds between facility requests in one cycle
 const FACILITY_GAP_MAX = 12;
 
+// A new random order of cities on every check, so the requests don't follow
+// the same pattern each time
+function shuffled(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export class Bot {
   constructor(config, options = {}) {
     this.config = config;
@@ -25,7 +36,8 @@ export class Bot {
     const earliestByFacility = {};
     let best = null;
 
-    const facilities = this.config.facilityId;
+    const facilities = this._cityOrder();
+    log(`check order: ${this._cityNames(facilities)}`);
     for (const [i, facilityId] of facilities.entries()) {
       // Space out requests within a cycle instead of firing them back to back
       if (i > 0) await sleep(FACILITY_GAP_MIN + Math.random() * (FACILITY_GAP_MAX - FACILITY_GAP_MIN));
@@ -66,6 +78,10 @@ export class Bot {
       }
     }
 
+    // Pick the next check's order now and log it, so it can be shown in advance
+    this.nextOrder = shuffled(this.config.facilityId);
+    log(`next check order: ${this._cityNames(this.nextOrder)}`);
+
     const cc = this.config.countryCode;
     const summary = Object.entries(earliestByFacility)
       .map(([f, d]) => `${facilityName(cc, f)}(${f})=${d}`)
@@ -79,6 +95,17 @@ export class Bot {
 
     log(`MATCH: ${best.date} at ${facilityName(cc, best.facilityId)}(${best.facilityId})`);
     return best;
+  }
+
+  // The order picked at the end of the last check, unless the cities changed since
+  _cityOrder() {
+    const ids = this.config.facilityId, planned = this.nextOrder;
+    const same = planned?.length === ids.length && planned.every(f => ids.includes(f));
+    return same ? planned : shuffled(ids);
+  }
+
+  _cityNames(ids) {
+    return ids.map(f => `${facilityName(this.config.countryCode, f)}(${f})`).join(', ');
   }
 
   async bookAppointment(sessionHeaders, candidate) {

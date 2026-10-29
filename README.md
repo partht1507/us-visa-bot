@@ -100,7 +100,7 @@ node index.js --help
 
 The bot will:
 1. **Log in** to your account using provided credentials
-2. **Check** each of your facilities in turn, with a random 5–12 s pause between them, then wait a random `REFRESH_DELAY` before the next round
+2. **Check** each of your facilities in a new random order every round, with a random 5–12 s pause between them, then wait a random `REFRESH_DELAY` before the next round
 3. **Compare** found dates against your constraints:
    - Must be earlier than current date (`-c`)
    - Must be after minimum date (`-m`) if specified
