@@ -4,7 +4,8 @@ An automated bot that monitors and reschedules US visa interview appointments to
 
 ## Features
 
-- 🔄 Continuously monitors available appointment slots
+- 🔄 Continuously monitors available appointment slots — at one or several consulates
+- 🛡️ Paced to avoid rate limits: random delays, a daily request budget and automatic backoff
 - 📅 Automatically books earlier dates when found  
 - 🎯 Configurable target and minimum date constraints
 - 🚨 Exits successfully when target date is reached
@@ -13,7 +14,7 @@ An automated bot that monitors and reschedules US visa interview appointments to
 
 ## How It Works
 
-The bot logs into your account on https://ais.usvisa-info.com/ and checks for available appointment dates every few seconds. When it finds a date earlier than your current booking (and within your specified constraints), it automatically reschedules your appointment.
+The bot logs into your account on https://ais.usvisa-info.com/ and checks for available appointment dates every few minutes (a random gap you choose, never less than 60 seconds). When it finds a date earlier than your current booking (and within your specified constraints), it automatically reschedules your appointment.
 
 ## Prerequisites
 
@@ -44,7 +45,8 @@ PASSWORD=your_password
 COUNTRY_CODE=your_country_code
 SCHEDULE_ID=your_schedule_id
 FACILITY_ID=your_facility_id
-REFRESH_DELAY=3
+REFRESH_DELAY=180-300
+DAILY_REQUEST_CAP=500
 ```
 
 ### Finding Your Configuration Values
@@ -55,8 +57,9 @@ REFRESH_DELAY=3
 | `PASSWORD` | Your login password | Your credentials for ais.usvisa-info.com |
 | `COUNTRY_CODE` | Your country code | Found in URL: `https://ais.usvisa-info.com/en-{COUNTRY_CODE}/` <br>Examples: `br` (Brazil), `fr` (France), `de` (Germany) |
 | `SCHEDULE_ID` | Your appointment schedule ID | Found in URL when rescheduling: <br>`https://ais.usvisa-info.com/en-{COUNTRY_CODE}/niv/schedule/{SCHEDULE_ID}/continue_actions` |
-| `FACILITY_ID` | Your consulate facility ID | Found in network calls when selecting dates, or inspect the date selector dropdown <br>Example: Paris = `44` |
-| `REFRESH_DELAY` | Seconds between checks | Optional, defaults to 3 seconds |
+| `FACILITY_ID` | One or more consulate facility IDs, comma-separated | Found in network calls when selecting dates, or inspect the date selector dropdown <br>Example: Paris = `44`; Canada: `89,92,94` (Calgary, Ottawa, Toronto) |
+| `REFRESH_DELAY` | Seconds between checks: a number or a random range | Optional, defaults to `180-300`. Values under 60 are raised to 60. |
+| `DAILY_REQUEST_CAP` | Most requests the bot may send in any 24 hours | Optional, defaults to `500`. When reached, the bot waits for slots to free up. |
 
 ## Usage
 
@@ -97,7 +100,7 @@ node index.js --help
 
 The bot will:
 1. **Log in** to your account using provided credentials
-2. **Check** for available dates every few seconds
+2. **Check** each of your facilities in turn, with a random 5–12 s pause between them, then wait a random `REFRESH_DELAY` before the next round
 3. **Compare** found dates against your constraints:
    - Must be earlier than current date (`-c`)
    - Must be after minimum date (`-m`) if specified
@@ -122,7 +125,9 @@ The bot will:
 - ✅ **Read-only until booking** - Only books when better dates are found
 - ✅ **Respects constraints** - Won't book outside your specified date range
 - ✅ **Graceful exit** - Stops automatically when target is reached
-- ✅ **Error recovery** - Automatically retries on network errors
+- ✅ **Rate-limit friendly** - Random gaps, a 60 s minimum between rounds, and a rolling 24 h request budget (`DAILY_REQUEST_CAP`, saved across restarts in `.request-budget.json`)
+- ✅ **Backs off when blocked** - A dropped connection (the site's block signal) pauses 1 h, then 2 h, then 4 h; a session error re-logs in after 5 min, 15 min, then 1 h — instead of retrying immediately
+- ✅ **Stops before making it worse** - After 4 failures in a row it exits and asks you to check the site by hand
 - ✅ **Secure credentials** - Uses environment variables for sensitive data
 
 ## Contributing
