@@ -74,8 +74,8 @@ function toEvent(at, msg) {
   if (msg === 'bot stopped') return { at, kind: 'session', icon: 'stop', text: 'Bot stopped' };
   if ((m = msg.match(/^booking FAILED for (\S+) (\S+) (.+?)\(\d+\): (.*)$/))) return { at, kind: 'bad', text: `Booking ${m[1]} ${m[2]} in ${m[3]} failed (${m[4]}) — your appointment wasn't changed` };
   if ((m = msg.match(/^booking NOT confirmed for (\S+) (\S+) (.+?)\(\d+\): the account page shows (.*?) — /))) return { at, kind: 'bad', text: `Booking ${m[1]} ${m[2]} in ${m[3]} NOT confirmed — your account page shows ${m[4]}. Check usvisa-info.com` };
-  if ((m = msg.match(/^booked time at (\S+) (\S+) (.+)$/))) return { at, kind: 'good', text: `Booked ${m[1]} at ${m[2]} — ${m[3].replace(/\(\d+\)/, '')}` };
-  if ((m = msg.match(/^MATCH: (\S+) at (.+)$/))) return { at, kind: 'good', text: `Found ${m[1]} in ${m[2].replace(/\(\d+\)/, '')}` };
+  if ((m = msg.match(/^booked time at (\S+) (\S+) (.+)$/))) return { at, kind: 'good', icon: 'booked', text: `Booked ${m[1]} at ${m[2]} — ${m[3].replace(/\(\d+\)/, '')}` };
+  if ((m = msg.match(/^MATCH: (\S+) at (.+)$/))) return { at, kind: 'good', icon: 'found', text: `Found ${m[1]} in ${m[2].replace(/\(\d+\)/, '').replace(/ — booking now$/, '')}` };
   if ((m = msg.match(/^\[DRY RUN\] Would book appointment at (\S+) (\S+)/))) return { at, kind: 'warn', text: `Dry run: would have booked ${m[1]} ${m[2]}` };
   if ((m = msg.match(/^EARLIER THAN APPOINTMENT: (.+?)\(\d+\) (\S+) — (\d+)d before/))) return { at, kind: 'early', text: `${m[1]} had ${m[2]} — ${m[3]} days earlier than your appointment (outside your window)` };
   if ((m = msg.match(/^SOFT BAN pattern: (.+?) had dates/))) return { at, kind: 'bad', text: `${m[1]} stopped returning dates — possible soft ban` };

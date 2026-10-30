@@ -214,12 +214,15 @@
     text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .act th .key { display: inline-block; vertical-align: middle; margin-right: 6px; }
   .act td { padding: 8px 14px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-  .act tbody tr:hover td { background: var(--hover); }
+  /* only the hovered row's own cells (not a nested table inside an expanded check) */
+  .act > tbody > tr:hover > td { background: var(--hover); }
+  .act > tbody > tr.ck-detail:hover > td, .act > tbody > tr.rq-detail:hover > td { background: var(--sunk); }
   .act .tm { font-weight: 600; }
   .act .c .d { font-weight: 550; }
   .act .c .n { color: var(--muted); font-size: 12px; margin-left: 5px; }
   .act .c.none { color: var(--faint); }
-  .act .c.hit { background: var(--good-bg) !important; } .act .c.hit .d { color: var(--good); font-weight: 750; }
+  /* a date in your window: a green pill on the date, not a filled cell */
+  .act .c.hit .d { color: var(--good); font-weight: 750; background: color-mix(in srgb, var(--good) 14%, transparent); padding: 2px 7px; border-radius: 6px; }
   .act .c.drop { color: var(--warn); font-weight: 650; }
   .act .c.better .d { color: var(--info); font-weight: 700; }
   .act th.appt-col { color: var(--info); }
@@ -298,13 +301,14 @@
   .act tr.ev .evi { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
   .act tr.ev.info .evi { background: var(--info); } .act tr.ev.warn .evi { background: var(--warn); }
   .act tr.ev.bad .evi { background: var(--bad); } .act tr.ev.bad .evt { color: var(--bad); font-weight: 600; }
-  .act tr.ev.good td { background: var(--good-bg); } .act tr.ev.good .evi { background: var(--good); } .act tr.ev.good .evt { color: var(--good); font-weight: 700; }
+  .act tr.ev.good td { background: color-mix(in srgb, var(--good) 5%, transparent); } .act tr.ev.good .evi { background: var(--good); } .act tr.ev.good .evt { color: var(--good); font-weight: 650; }
+  .act tr.ev .evic.ic-booked, .act tr.ev .evic.ic-found { --c: var(--good); }
   .act tr.ev .x { color: var(--muted); font-size: 12px; }
   /* session events: a tinted icon badge instead of the dot */
   .act tr.ev .evic { --c: var(--session); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; flex: none;
     color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
   .act tr.ev .evic svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .act tr.ev .evic.stop { --c: var(--muted); }
+  .act tr.ev .evic.ic-stop { --c: var(--muted); }
   .act tr.ev.bad .evic { --c: var(--bad); }
   .act tr.ev.session td { background: color-mix(in srgb, var(--session) 4%, transparent); }
   .act tr.ev.session .evt { color: var(--text-2); font-weight: 550; }
@@ -1064,6 +1068,8 @@ const EVENT_ICONS = {
   signin: '<svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>',
   signout: '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
   stop: '<svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/></svg>',
+  booked: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M8 12.5l2.6 2.6L16 9.6"/></svg>',
+  found: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>',
 };
 
 // The check in progress: each city's answer so far, and which city is being asked
@@ -1151,7 +1157,7 @@ function renderTable() {
     const dk = dayKey(it.at);
     if (dk !== curDay) { curDay = dk; html += `<tr class="day"><td colspan="${cols}">${dk === todayKey ? 'Today' : dk}</td></tr>`; }
     if (it.type === 'event') {
-      const mark = it.e.icon ? `<span class="evic ${it.e.icon}">${EVENT_ICONS[it.e.icon]}</span>` : '<span class="evi"></span>';
+      const mark = it.e.icon ? `<span class="evic ic-${it.e.icon}">${EVENT_ICONS[it.e.icon]}</span>` : '<span class="evi"></span>';
       html += `<tr class="ev ${it.e.kind}"><td class="tm num">${clock(it.at)}</td><td colspan="${cols - 1}"><span class="evt">${mark}${esc(it.e.text)}${it.n > 1 ? ` <span class="x">×${it.n}</span>` : ''}</span></td></tr>`;
       continue;
     }
