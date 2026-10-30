@@ -31,10 +31,14 @@ export class Bot {
     return await this.client.login();
   }
 
-  async checkAvailableDate(sessionHeaders, currentBookedDate, minDate) {
+  // Checks every city. A city with a date in the window is booked right away
+  // (onMatch), without waiting for the rest; the remaining cities then only
+  // count dates earlier than the one just booked. Returns the last booking, or null.
+  async checkAvailableDate(sessionHeaders, currentBookedDate, minDate, onMatch) {
     let totalPolled = 0, totalTooLate = 0, totalTooEarly = 0;
     const earliestByFacility = {};
-    let best = null;
+    const windowEnd = currentBookedDate;
+    let booked = null, matched = false;
 
     const facilities = this._cityOrder();
     log(`check order: ${this._cityNames(facilities)}`);
@@ -74,7 +78,12 @@ export class Bot {
       if (good.length) {
         good.sort();
         const candidate = { date: good[0], facilityId };
-        if (!best || candidate.date < best.date) best = candidate;
+        matched = true;
+        log(`MATCH: ${candidate.date} at ${facilityName(this.config.countryCode, facilityId)}(${facilityId}) — booking now`);
+        if (onMatch && await onMatch(candidate)) {
+          booked = candidate;
+          currentBookedDate = candidate.date; // the rest of this check only looks for earlier dates
+        }
       }
     }
 
@@ -88,13 +97,8 @@ export class Bot {
       .join('  ');
     log(`earliest per city: ${summary}  [budget ${this.budget.used()}/${this.budget.cap}]`);
 
-    if (!best) {
-      log(`no good dates — ${totalPolled} polled, ${totalTooLate} too late, ${totalTooEarly} too early`);
-      return null;
-    }
-
-    log(`MATCH: ${best.date} at ${facilityName(cc, best.facilityId)}(${best.facilityId})`);
-    return best;
+    if (!matched) log(`no good dates — ${totalPolled} polled, ${totalTooLate} too late, ${totalTooEarly} too early`);
+    return booked;
   }
 
   // The order picked at the end of the last check, unless the cities changed since

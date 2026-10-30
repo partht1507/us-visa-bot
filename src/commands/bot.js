@@ -39,26 +39,18 @@ export async function botCommand(options) {
     const sessionHeaders = await bot.initialize();
 
     while (true) {
-      const availableDate = await bot.checkAvailableDate(
-        sessionHeaders,
-        currentBookedDate,
-        minDate
-      );
-      consecutiveFailures = 0;
-
-      if (availableDate) {
-        const booked = await bot.bookAppointment(sessionHeaders, availableDate);
-
-        if (booked) {
-          currentBookedDate = availableDate.date;
-          options = { ...options, current: currentBookedDate };
-
-          if (targetDate && availableDate.date <= targetDate) {
-            log(`Target date reached! Successfully booked appointment on ${availableDate.date}`);
-            process.exit(0);
-          }
+      // A date in the window is booked the moment its city answers
+      await bot.checkAvailableDate(sessionHeaders, currentBookedDate, minDate, async candidate => {
+        if (!(await bot.bookAppointment(sessionHeaders, candidate))) return false;
+        currentBookedDate = candidate.date;
+        options = { ...options, current: currentBookedDate };
+        if (targetDate && candidate.date <= targetDate) {
+          log(`Target date reached! Successfully booked appointment on ${candidate.date}`);
+          process.exit(0);
         }
-      }
+        return true;
+      });
+      consecutiveFailures = 0;
 
       const delay = min + Math.random() * (max - min);
       log(`sleeping ${delay.toFixed(1)}s`);
