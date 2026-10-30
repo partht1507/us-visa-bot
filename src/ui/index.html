@@ -1173,7 +1173,10 @@ function renderTable() {
     const cells = names.map(n => {
       const c = byName[n];
       if (!c) return `<td class="c none">·</td>`;
-      if (!c.date) return before[n] ? `<td class="c drop">⚠ dropped to 0</td>` : `<td class="c none">—</td>`;
+      // every city empty at once = the soft-ban pattern; one city empty = its dates were taken
+      if (!c.date) return !before[n] ? `<td class="c none">—</td>`
+        : it.ch.cities.every(x => !x.date) ? `<td class="c drop">⚠ dropped to 0</td>`
+        : `<td class="c none" title="${esc(n)} had dates last check; they've all been taken">0 left</td>`;
       total += c.count;
       const moved = before[n] && before[n] !== c.date ? daysBetween(before[n], c.date) : 0;
       const arr = moved > 0 ? `<span class="arr up">↑ ${moved}d</span>` : moved < 0 ? `<span class="arr dn">↓ ${-moved}d</span>` : '';

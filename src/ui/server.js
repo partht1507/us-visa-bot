@@ -78,7 +78,10 @@ function toEvent(at, msg) {
   if ((m = msg.match(/^MATCH: (\S+) at (.+)$/))) return { at, kind: 'good', icon: 'found', text: `Found ${m[1]} in ${m[2].replace(/\(\d+\)/, '').replace(/ — booking now$/, '')}` };
   if ((m = msg.match(/^\[DRY RUN\] Would book appointment at (\S+) (\S+)/))) return { at, kind: 'warn', text: `Dry run: would have booked ${m[1]} ${m[2]}` };
   if ((m = msg.match(/^EARLIER THAN APPOINTMENT: (.+?)\(\d+\) (\S+) — (\d+)d before/))) return { at, kind: 'early', text: `${m[1]} had ${m[2]} — ${m[3]} days earlier than your appointment (outside your window)` };
-  if ((m = msg.match(/^SOFT BAN pattern: (.+?) had dates/))) return { at, kind: 'bad', text: `${m[1]} stopped returning dates — possible soft ban` };
+  // older bot versions flagged any single city that dropped to 0; that's usually just booked out
+  if ((m = msg.match(/^SOFT BAN pattern: (.+?) had dates, now returning 0$/))) return { at, kind: 'info', text: `${m[1]} returned 0 dates` };
+  if (/^SOFT BAN pattern/.test(msg)) return { at, kind: 'bad', text: 'Every city returned 0 dates — possible soft ban' };
+  if ((m = msg.match(/^no dates left: (.+?) \(/))) return { at, kind: 'info', text: `${m[1]}: no dates left (the last one was taken)` };
   if ((m = msg.match(/^city has dates again: (.+)$/))) return { at, kind: 'good', text: `${m[1]} returning dates again` };
   if ((m = msg.match(/^Blocked\/hangup: .*Backing off (\d+)m/))) return { at, kind: 'bad', text: `Site dropped the connection — pausing ${m[1] / 60}h` };
   if ((m = msg.match(/^Session\/authentication error: (.*?)\.? Re-login in (\d+)m/))) {
