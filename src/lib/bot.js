@@ -130,14 +130,16 @@ export class Bot {
     return ids.map(f => `${facilityName(this.config.countryCode, f)}(${f})`).join(', ');
   }
 
-  // Soft-ban pattern: a city that was returning dates suddenly returns [].
-  // Cities empty from the start (no history of dates) are not alerted.
+  // A city that had dates and now returns none is usually just booked out.
+  // The soft-ban pattern is every city returning [] at once, after some had
+  // dates - that's what alerts. "city back" is only sent after a ban alert.
   async _alertEmptyChanges(earliestByFacility) {
     const cc = this.config.countryCode;
+    const entries = Object.entries(earliestByFacility);
+    const allEmpty = entries.length > 0 && entries.every(([, d]) => d === '—×0');
     const dropped = [], recovered = [];
-    for (const [f, d] of Object.entries(earliestByFacility)) {
-      const empty = d === '—×0';
-      if (!empty) {
+    for (const [f, d] of entries) {
+      if (d !== '—×0') {
         if (this.emptyCities.has(f)) { this.emptyCities.delete(f); recovered.push(facilityName(cc, f)); }
         this.hadDates.add(f);
       } else if (this.hadDates.has(f) && !this.emptyCities.has(f)) {
@@ -145,15 +147,22 @@ export class Bot {
         dropped.push(facilityName(cc, f));
       }
     }
-    if (dropped.length) {
-      log(`SOFT BAN pattern: ${dropped.join(', ')} had dates, now returning 0`);
-      await notify(this.config.ntfyTopic, 'US Visa Bot: soft ban starting', `${dropped.join(', ')} had dates and now return 0 — likely soft ban.`, { priority: 'high', tags: ['warning'] });
+    if (allEmpty && dropped.length && !this.banSuspected) {
+      this.banSuspected = true;
+      log(`SOFT BAN pattern: every city returned 0 dates (${[...this.hadDates].map(f => facilityName(cc, f)).join(', ')} had dates)`);
+      await notify(this.config.ntfyTopic, 'US Visa Bot: soft ban starting', 'Every city now returns 0 dates, after some had dates — likely a soft ban. Consider pausing for a few hours.', { priority: 'high', tags: ['warning'] });
+    } else if (dropped.length && !allEmpty) {
+      log(`no dates left: ${dropped.join(', ')} (other cities still have dates — taken, not a ban)`);
     }
     if (recovered.length) {
       log(`city has dates again: ${recovered.join(', ')}`);
-      await notify(this.config.ntfyTopic, 'US Visa Bot: city back', `${recovered.join(', ')} returning dates again.`, { priority: 'low', tags: ['white_check_mark'] });
+      if (this.banSuspected) {
+        this.banSuspected = false;
+        await notify(this.config.ntfyTopic, 'US Visa Bot: dates are back', `${recovered.join(', ')} returning dates again.`, { priority: 'low', tags: ['white_check_mark'] });
+      }
     }
   }
+
 
   async bookAppointment(sessionHeaders, candidate) {
     this.booking = true; // a stop request waits for this to finish
