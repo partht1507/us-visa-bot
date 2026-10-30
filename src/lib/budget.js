@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { log, sleep } from './utils.js';
+import { reloadConfig } from './config.js';
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const STATE_FILE = new URL('../../.request-budget.json', import.meta.url);
@@ -22,8 +23,17 @@ export class RequestBudget {
     while (this.stamps.length + n > this.cap) {
       const waitMs = this.stamps[0] + WINDOW_MS - Date.now() + 1000;
       log(`daily budget used (${this.stamps.length}/${this.cap}) — sleeping ${(waitMs / 3600000).toFixed(1)}h until slots free up`);
-      await sleep(waitMs / 1000);
-      this._prune();
+      // short naps so a cap raised in .env takes effect without a restart
+      const until = Date.now() + waitMs;
+      while (Date.now() < until && this.stamps.length + n > this.cap) {
+        await sleep(Math.min(60000, until - Date.now()) / 1000);
+        const next = reloadConfig();
+        if (next && next.dailyRequestCap !== this.cap) {
+          log(`daily cap ${this.cap} → ${next.dailyRequestCap}`);
+          this.cap = next.dailyRequestCap;
+        }
+        this._prune();
+      }
     }
     this.record(n);
   }
