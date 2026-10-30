@@ -211,22 +211,26 @@
   .tw { max-height: 560px; overflow: auto; }
   table.act { width: 100%; border-collapse: collapse; font-size: 13px; }
   .act th { position: sticky; top: 0; z-index: 1; background: var(--panel-hi); color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-    text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .act th .key { display: inline-block; vertical-align: middle; margin-right: 6px; }
-  .act td { padding: 8px 14px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  .act td { padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  .act th:first-child, .act td:first-child { padding-left: 14px; }
   /* only the hovered row's own cells (not a nested table inside an expanded check) */
   .act > tbody > tr:hover > td { background: var(--hover); }
   .act > tbody > tr.ck-detail:hover > td, .act > tbody > tr.rq-detail:hover > td { background: var(--sunk); }
   .act .tm { font-weight: 600; }
   .act .c .d { font-weight: 550; }
-  .act .c .n { color: var(--muted); font-size: 12px; margin-left: 5px; }
+  .act .c .n { color: var(--muted); font-size: 12px; margin-left: 4px; }
+  /* when space is tight, the count and the ↑/↓ chip drop under the date instead of widening the table */
+  .act td.c { white-space: normal; }
+  .act td.c .d, .act td.c .n, .act td.c .arr { white-space: nowrap; display: inline-block; }
   .act .c.none { color: var(--faint); }
   /* a date in your window: a green pill on the date, not a filled cell */
   .act .c.hit .d { color: var(--good); font-weight: 750; background: color-mix(in srgb, var(--good) 14%, transparent); padding: 2px 7px; border-radius: 6px; }
   .act .c.drop { color: var(--warn); font-weight: 650; }
-  .act .c.better .d { color: var(--info); font-weight: 700; }
+  .act .c.better .d { color: var(--good); font-weight: 700; }
   .act th.appt-col { color: var(--info); }
-  .act .arr { font-weight: 700; font-size: 11px; margin-left: 6px; padding: 1px 5px; border-radius: 5px; }
+  .act .arr { font-weight: 700; font-size: 11px; margin-left: 5px; padding: 1px 5px; border-radius: 5px; }
   .act .arr.up { color: var(--good); background: var(--good-bg); }
   .act .arr.dn { color: var(--bad); background: var(--bad-bg); }
   .act .dim { color: var(--muted); }
