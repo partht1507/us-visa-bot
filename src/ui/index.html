@@ -303,6 +303,8 @@
   .act tr.ev.bad .evi { background: var(--bad); } .act tr.ev.bad .evt { color: var(--bad); font-weight: 600; }
   .act tr.ev.good td { background: color-mix(in srgb, var(--good) 5%, transparent); } .act tr.ev.good .evi { background: var(--good); } .act tr.ev.good .evt { color: var(--good); font-weight: 650; }
   .act tr.ev .evic.ic-booked, .act tr.ev .evic.ic-found { --c: var(--good); }
+  .act tr.ev .evic.ic-booked { color: #fff; background: var(--good); border-color: var(--good); box-shadow: 0 2px 6px color-mix(in srgb, var(--good) 35%, transparent); }
+  .act tr.ev .evic.ic-booked svg { stroke-width: 2.4; }
   .act tr.ev .x { color: var(--muted); font-size: 12px; }
   /* session events: a tinted icon badge instead of the dot */
   .act tr.ev .evic { --c: var(--session); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; flex: none;
@@ -1068,8 +1070,8 @@ const EVENT_ICONS = {
   signin: '<svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>',
   signout: '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
   stop: '<svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/></svg>',
-  booked: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M8 12.5l2.6 2.6L16 9.6"/></svg>',
-  found: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>',
+  booked: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 9.5h18"/><path d="M8.8 15l2.2 2.2 4.3-4.4"/></svg>',
+  found: '<svg viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>',
 };
 
 // The check in progress: each city's answer so far, and which city is being asked
