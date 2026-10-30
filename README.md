@@ -66,7 +66,7 @@ No terminal next time: double-click **`Visa Bot.cmd`** (Windows) or **`Visa Bot.
 
 **Every check, in a table**
 - One row per check with each city's earliest date and how many dates it had; the check in progress fills in live, city by city, as the answers come back
-- ↑/↓ when a city's earliest date moves, highlights for dates inside your window, and a warning when a city that had dates drops to zero (the soft-ban pattern)
+- ↑/↓ when a city's earliest date moves, highlights for dates inside your window, "0 left" when a city's last dates are taken, and a warning when every city drops to zero at once (the soft-ban pattern)
 - Sign-ins, sign-outs and stops have their own icons, so each session is easy to pick out; bookings, warnings and problems are coloured
 - Filters: **All**, **Changes**, **Events** (sign-ins, backoffs, settings changes, bookings)
 
@@ -117,8 +117,8 @@ Install the [ntfy app](https://ntfy.sh) (iOS / Android), subscribe to a topic na
 | ⚠️📆 **CHECK your appointment** (max priority) | It tried to book, but your account page doesn't show the new date |
 | ⚠️ **Booking failed** | The site rejected the booking; your appointment wasn't changed |
 | 📆👀 **Earlier date: City date** | A date earlier than your appointment opened, outside your window |
-| ⚠️ **Soft ban starting** | A city that had dates suddenly returns none |
-| ✅ **City back** | That city returns dates again |
+| ⚠️ **Soft ban starting** | Every city suddenly returns no dates at once (one city running out is just booked out, not alerted) |
+| ✅ **Dates are back** | Dates return after a soft-ban alert |
 | ⚠️ **US Visa Bot STOPPED** | It gave up after repeated failures |
 
 ### Dashboard commands
