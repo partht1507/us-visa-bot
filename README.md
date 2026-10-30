@@ -58,7 +58,7 @@ No terminal next time: double-click **`Visa Bot.cmd`** (Windows) or **`Visa Bot.
 
 **See what's happening at a glance**
 - **Live status** with a countdown to the next check — and, right inside it, a tile per city:
-  - each city's **earliest open date** and how it compares to your interview — *✓ in window* (green), *20d earlier* (purple) or *+102d later* (red)
+  - each city's **earliest open date** and how it compares to your interview — *✓ in window* (green), *20d earlier* (green) or *+102d later* (red)
   - a **★ Earliest available** badge on the city with the earliest date you could book right now
   - how many dates each city has, a spinner on the city being asked right now, and a countdown to when each city is checked, in the bot's random order
 - The **booking window it's working on** and whether it's auto-booking or just watching, with the request budget as a small line under the countdown

@@ -141,10 +141,10 @@
   .cyc .cc .row { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 15px; }
   .cyc .cc { position: relative; }
   .cyc .cc.closest { border-color: color-mix(in srgb, var(--accent) 60%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 6px 18px -8px color-mix(in srgb, var(--accent) 55%, transparent); }
-  .cyc .cc.closest.hit { border-color: var(--good); }
+  .cyc .cc.closest.hit, .cyc .cc.closest.better { border-color: var(--good); box-shadow: 0 0 0 1px color-mix(in srgb, var(--good) 35%, transparent), 0 6px 18px -8px color-mix(in srgb, var(--good) 55%, transparent); }
   .cyc .cc .best { position: absolute; top: -9px; left: 12px; font-size: 10px; font-weight: 800; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px;
     color: var(--on-accent); background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent); }
-  .cyc .cc.closest.hit .best { background: var(--good); color: #fff; }
+  .cyc .cc.closest.hit .best, .cyc .cc.closest.better .best { background: var(--good); color: #fff; box-shadow: 0 2px 6px color-mix(in srgb, var(--good) 40%, transparent); }
   .cyc .cc .top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
   .cyc .cc .cnt { font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; padding: 0 5px; border-radius: 5px; background: color-mix(in srgb, var(--text) 7%, transparent); }
   .cyc .cc.none .cnt { color: var(--warn); }
@@ -152,12 +152,15 @@
   .cyc .cc .ind { font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--muted); }
   .cyc .cc .ind:not(:empty) { --c: var(--muted); color: var(--c); padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 28%, transparent); }
   .cyc .cc.hit .ind { --c: var(--good); }
-  .cyc .cc.better .ind { --c: var(--info); }
+  .cyc .cc.better .ind { --c: var(--good); }
   .cyc .cc.later .ind { --c: var(--bad); }
-  .cyc .cc.hit { border-color: color-mix(in srgb, var(--good) 55%, transparent); background: color-mix(in srgb, var(--good) 8%, var(--panel)); }
-  .cyc .cc.hit .dt, .cyc .cc.hit .ind { color: var(--good); }
-  .cyc .cc.better { border-color: color-mix(in srgb, var(--info) 50%, transparent); background: color-mix(in srgb, var(--info) 7%, var(--panel)); }
-  .cyc .cc.better .dt, .cyc .cc.better .ind { color: var(--info); }
+  /* inside your window — bookable: solid green, filled pill */
+  .cyc .cc.hit { border: 2px solid var(--good); background: color-mix(in srgb, var(--good) 15%, var(--panel)); padding: 10px 13px 11px; }
+  .cyc .cc.hit .dt { color: var(--good); }
+  .cyc .cc.hit .ind:not(:empty) { color: #fff; background: var(--good); border-color: var(--good); }
+  /* earlier than your interview: good news, green */
+  .cyc .cc.better { border-color: color-mix(in srgb, var(--good) 50%, transparent); background: color-mix(in srgb, var(--good) 7%, var(--panel)); }
+  .cyc .cc.better .dt, .cyc .cc.better .ind { color: var(--good); }
   .cyc .cc.none .dt { color: var(--warn); font-size: 12.5px; }
   .cyc .cc.err .dt { color: var(--bad); font-size: 12.5px; }
   .cyc .cc.wait .dt { color: var(--faint); }
@@ -428,7 +431,7 @@
   .sw input:checked + i::after { transform: translateX(16px); }
   .sw input:focus-visible + i { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
 
-  .act tr.ev.early td { background: color-mix(in srgb, var(--info) 10%, var(--panel)); } .act tr.ev.early .evi { background: var(--info); } .act tr.ev.early .evt { color: var(--info); font-weight: 650; }
+  .act tr.ev.early td { background: color-mix(in srgb, var(--good) 6%, var(--panel)); } .act tr.ev.early .evi { background: var(--good); } .act tr.ev.early .evt { color: var(--good); font-weight: 600; }
   a.btn-ghost { text-decoration: none; display: inline-block; }
   .icon-btn.on { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); background: var(--good-bg); }
 
