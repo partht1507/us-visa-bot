@@ -265,19 +265,6 @@ function insights() {
   };
 }
 
-function checksCsv() {
-  const checks = allChecks(3650);
-  const names = [];
-  for (const ch of checks) for (const c of ch.cities) if (!names.includes(c.name)) names.push(c.name);
-  const q = v => (/[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v);
-  const rows = [['time_utc', 'time_local', ...names.flatMap(n => [`${n} earliest`, `${n} open`])].map(q).join(',')];
-  for (const ch of checks) {
-    const by = Object.fromEntries(ch.cities.map(c => [c.name, c]));
-    rows.push([ch.at, new Date(ch.at).toLocaleString(), ...names.flatMap(n => [by[n]?.date || '', by[n] ? by[n].count : ''])].map(v => q(String(v))).join(','));
-  }
-  return rows.join('\n') + '\n';
-}
-
 // ---------- .env settings (credentials are never read out or written here)
 function getSettings() {
   const cc = process.env.COUNTRY_CODE;
@@ -385,10 +372,6 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url.startsWith('/api/request?')) {
     const q = new URL(req.url, 'http://localhost').searchParams;
     return json(200, findRequest(q.get('label') || '', q.get('at') || '') || { missing: true });
-  }
-  if (req.method === 'GET' && req.url === '/api/checks.csv') {
-    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="visa-checks-${new Date().toISOString().slice(0, 10)}.csv"` });
-    return res.end(checksCsv());
   }
   if (req.method === 'GET' && req.url === '/api/settings') return json(200, getSettings());
   if (req.method === 'POST' && req.url === '/api/settings') { const r = setSettings(await readBody(req)); return json(r.error ? 400 : 200, r); }

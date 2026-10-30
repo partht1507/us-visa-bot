@@ -538,7 +538,6 @@
       <div class="ph">
         <h2>Checks</h2><span class="sub" id="tblSub"></span>
         <div class="right">
-          <a class="btn-ghost" href="/api/checks.csv" download>⬇ CSV</a>
           <div class="seg" id="tblFilter">
             <button data-f="all" class="on">All</button>
             <button data-f="changes">Changes</button>
@@ -769,7 +768,7 @@ const colorOf = name => {
 const PHASES = {
   stopped:      { dot: '',     bar: 'Stopped',      head: 'Stopped',                       sub: 'Pick your dates and press Start.' },
   'signing-in': { dot: 'on',   bar: 'Signing in',   head: 'Signing in…',                   sub: 'Connecting to the visa site.' },
-  checking:     { dot: 'on',   bar: 'Checking',     head: 'Checking cities…',              sub: 'Asking each city for open dates.' },
+  checking:     { dot: 'on',   bar: 'Checking',     head: 'Checking cities…',              sub: 'Querying each city for availability.' },
   waiting:      { dot: 'on',   bar: 'Watching',     head: 'Watching for openings',         sub: 'Nothing in your window yet.', label: 'Next check in' },
   relogin:      { dot: 'warn', bar: 'Reconnecting', head: 'Reconnecting',                  sub: 'Session ended — signing in again automatically.', label: 'Signing in again in', p: 'warn' },
   paused:       { dot: 'bad',  bar: 'Paused',       head: 'Paused — site pushed back',     sub: 'Resting to avoid a ban.', label: 'Next check in', p: 'bad' },
@@ -873,7 +872,7 @@ function renderCycle(running, counting) {
     const when = c.t ? ` · checked ${c.t.startsWith('~') ? 'in about ' + c.t.slice(1) : 'in ' + c.t}` : '';
     // The city's earliest open date, and how it compares to your window and appointment
     let date = '', ind = '', tone = '', what;
-    if (c.spin) { date = '<span class="spin"></span>'; what = 'being checked now'; }
+    if (c.spin) { date = '<span class="spin"></span>'; what = 'request in flight'; }
     else if (c.d) {
       const v = vsAppt(c.d);
       date = esc(shortDate(c.d));
@@ -1090,8 +1089,8 @@ function liveRow(names, cols) {
   const cells = names.map(n => {
     const c = live.found[n];
     if (!c) return n === live.asking
-      ? `<td class="c lv-ask"><span class="spin sm"></span>asking…</td>`
-      : `<td class="c"><span class="skel" title="${esc(n)} hasn't been asked yet"></span></td>`;
+      ? `<td class="c lv-ask" title="GET dates request in flight"><span class="spin sm"></span>Request in flight</td>`
+      : `<td class="c"><span class="skel" title="${esc(n)}: queued — not requested yet"></span></td>`;
     if (c.err) return `<td class="c drop">error</td>`;
     if (!c.date) return `<td class="c none lv-in">—</td>`;
     total += c.count;

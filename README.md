@@ -68,7 +68,7 @@ No terminal next time: double-click **`Visa Bot.cmd`** (Windows) or **`Visa Bot.
 - One row per check with each city's earliest date and how many dates it had; the check in progress fills in live, city by city, as the answers come back
 - ↑/↓ when a city's earliest date moves, highlights for dates inside your window, and a warning when a city that had dates drops to zero (the soft-ban pattern)
 - Sign-ins, sign-outs and stops have their own icons, so each session is easy to pick out; bookings, warnings and problems are coloured
-- Filters: **All**, **Changes**, **Events** (sign-ins, backoffs, settings changes, bookings) — plus **CSV export**
+- Filters: **All**, **Changes**, **Events** (sign-ins, backoffs, settings changes, bookings)
 
 **Click a check to see what the bot did**
 
