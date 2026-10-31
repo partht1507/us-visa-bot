@@ -1,8 +1,9 @@
+import { spawn } from 'child_process';
 import { Bot } from '../lib/bot.js';
 import { getConfig, reloadConfig } from '../lib/config.js';
 import { rotateIfNeeded } from '../lib/logfiles.js';
 import { notify } from '../lib/notify.js';
-import { log, sleep, isSocketHangupError, onStopRequest } from '../lib/utils.js';
+import { log, sleep, isSocketHangupError, computerJustSlept, onStopRequest } from '../lib/utils.js';
 
 const MIN_CYCLE_DELAY = 60;                // floor between check cycles (s), whatever REFRESH_DELAY says
 const BLOCK_BACKOFF = [3600, 7200, 14400]; // 1h, 2h, 4h after consecutive hangups/blocks
@@ -37,6 +38,12 @@ async function shutdown() {
 }
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+// A sleeping Mac can't check for dates, so hold off idle sleep until the bot exits.
+// The display can still turn off; closing the lid still sleeps.
+if (process.platform === 'darwin') {
+  spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
+}
 onStopRequest(shutdown);
 
 export async function botCommand(options) {
@@ -93,6 +100,12 @@ export async function botCommand(options) {
     }
   } catch (err) {
     activeBot = null; // the session is dead or blocked: nothing to sign out of
+    // Sleep kills open connections: that's not the site blocking us
+    if (isSocketHangupError(err) && computerJustSlept()) {
+      log('connection lost while the computer was asleep — retrying in 1m');
+      await sleep(60);
+      return botCommand(options);
+    }
     consecutiveFailures++;
     if (consecutiveFailures > MAX_CONSECUTIVE_FAILURES) {
       log(`${consecutiveFailures - 1} failures in a row — stopping to protect the account. Check the site manually before restarting.`);
