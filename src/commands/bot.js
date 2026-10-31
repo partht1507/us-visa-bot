@@ -1,4 +1,3 @@
-import { spawn } from 'child_process';
 import { Bot } from '../lib/bot.js';
 import { getConfig, reloadConfig } from '../lib/config.js';
 import { notify } from '../lib/notify.js';
@@ -37,12 +36,6 @@ async function shutdown() {
 }
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
-
-// A sleeping Mac can't check for dates, so hold off idle sleep until the bot exits.
-// The display can still turn off; closing the lid still sleeps.
-if (process.platform === 'darwin') {
-  spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
-}
 onStopRequest(shutdown);
 
 export async function botCommand(options) {
