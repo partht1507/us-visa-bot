@@ -83,6 +83,7 @@ function toEvent(at, msg) {
   if (/^SOFT BAN pattern/.test(msg)) return { at, kind: 'bad', text: 'Every city returned 0 dates — possible soft ban' };
   if ((m = msg.match(/^no dates left: (.+?) \(/))) return { at, kind: 'info', text: `${m[1]}: no dates left (the last one was taken)` };
   if ((m = msg.match(/^city has dates again: (.+)$/))) return { at, kind: 'good', text: `${m[1]} returning dates again` };
+  if (msg.startsWith('connection lost while the computer was asleep')) return { at, kind: 'info', text: 'Computer was asleep — reconnecting' };
   if ((m = msg.match(/^Blocked\/hangup: .*Backing off (\d+)m/))) return { at, kind: 'bad', text: `Site dropped the connection — pausing ${m[1] / 60}h` };
   if ((m = msg.match(/^Session\/authentication error: (.*?)\.? Re-login in (\d+)m/))) {
     const why = /session expired/i.test(m[1]) ? 'Session expired' : 'Sign-in problem';
